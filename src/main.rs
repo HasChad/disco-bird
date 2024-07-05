@@ -1,12 +1,12 @@
 #![windows_subsystem = "windows"]
 
+use macroquad::audio::load_sound;
 use macroquad::experimental::animation::*;
 use macroquad::{
     audio::{play_sound, play_sound_once, PlaySoundParams},
     prelude::*,
 };
 use miniquad::conf::Icon;
-use rust_embed::{Embed, EmbeddedFile};
 use std::f32::consts::PI;
 
 const BIRD_SIZE: f32 = 17.0;
@@ -16,10 +16,6 @@ const GRAVITY: f32 = 2000.0;
 const JUMP_FORCE: f32 = 600.0;
 const GAME_SPEED: f32 = 150.0;
 const PIPE1_START: f32 = 432. + 100.; //screen width + 100.
-
-#[derive(Embed)]
-#[folder = "assets"]
-struct Asset;
 
 #[derive(PartialEq)]
 enum GameState {
@@ -44,6 +40,10 @@ struct Ground {
     y: f32,
 }
 
+fn load_img(bytes: &'static [u8]) -> Image {
+    Image::from_file_with_format(bytes, Some(ImageFormat::Png)).unwrap()
+}
+
 fn populate_array(img: Image, array: &mut [u8]) {
     let mut index: usize = 0;
     for pixel in img.get_image_data() {
@@ -54,33 +54,21 @@ fn populate_array(img: Image, array: &mut [u8]) {
     }
 }
 
-fn icon_formatter() -> Icon {
+pub fn set() -> Icon {
     let mut array_small: [u8; 1024] = [0; 1024];
     let mut array_medium: [u8; 4096] = [0; 4096];
     let mut array_big: [u8; 16384] = [0; 16384];
 
     populate_array(
-        Image::from_file_with_format(
-            &Asset::get("icons/cool-icon16.png").unwrap().data,
-            Some(ImageFormat::Png),
-        )
-        .unwrap(),
+        load_img(include_bytes!("../assets/icons/cool-icon16.png")),
         &mut array_small,
     );
     populate_array(
-        Image::from_file_with_format(
-            &Asset::get("icons/cool-icon32.png").unwrap().data,
-            Some(ImageFormat::Png),
-        )
-        .unwrap(),
+        load_img(include_bytes!("../assets/icons/cool-icon32.png")),
         &mut array_medium,
     );
     populate_array(
-        Image::from_file_with_format(
-            &Asset::get("icons/cool-icon64.png").unwrap().data,
-            Some(ImageFormat::Png),
-        )
-        .unwrap(),
+        load_img(include_bytes!("../assets/icons/cool-icon64.png")),
         &mut array_big,
     );
 
@@ -94,7 +82,7 @@ fn icon_formatter() -> Icon {
 fn window_conf() -> Conf {
     Conf {
         window_title: "DiscoBird".into(),
-        icon: Some(icon_formatter()),
+        icon: Some(set()),
         window_width: 432,
         window_height: 768,
         window_resizable: false,
@@ -104,25 +92,14 @@ fn window_conf() -> Conf {
 
 #[macroquad::main(window_conf)]
 async fn main() {
+    set_pc_assets_folder("assets");
     rand::srand(macroquad::miniquad::date::now() as u64);
 
     // texture load
-    let bird_texture = Texture2D::from_file_with_format(
-        &Asset::get("sprites/cool-bird.png").unwrap().data,
-        Some(ImageFormat::Png),
-    );
-    let pipe_texture = Texture2D::from_file_with_format(
-        &Asset::get("sprites/cool-pipe.png").unwrap().data,
-        Some(ImageFormat::Png),
-    );
-    let ground_texture = Texture2D::from_file_with_format(
-        &Asset::get("sprites/cool-ground.png").unwrap().data,
-        Some(ImageFormat::Png),
-    );
-    let bg_texture = Texture2D::from_file_with_format(
-        &Asset::get("sprites/cool-bg.png").unwrap().data,
-        Some(ImageFormat::Png),
-    );
+    let bird_texture = load_texture("sprites/cool-bird.png").await.unwrap();
+    let pipe_texture = load_texture("sprites/cool-pipe.png").await.unwrap();
+    let ground_texture = load_texture("sprites/cool-ground.png").await.unwrap();
+    let bg_texture = load_texture("sprites/cool-bg.png").await.unwrap();
     let mut bird_sprite = AnimatedSprite::new(
         60,
         36,
@@ -136,40 +113,16 @@ async fn main() {
     );
 
     // text texture load
-    let game_over_text = Texture2D::from_file_with_format(
-        &Asset::get("sprites/game-over-text.png").unwrap().data,
-        Some(ImageFormat::Png),
-    );
-    let start_info_text = Texture2D::from_file_with_format(
-        &Asset::get("sprites/start-info-text.png").unwrap().data,
-        Some(ImageFormat::Png),
-    );
-    let game_name_text = Texture2D::from_file_with_format(
-        &Asset::get("sprites/disco-bird-text.png").unwrap().data,
-        Some(ImageFormat::Png),
-    );
+    let game_over_text = load_texture("sprites/game-over-text.png").await.unwrap();
+    let start_info_text = load_texture("sprites/start-info-text.png").await.unwrap();
+    let game_name_text = load_texture("sprites/disco-bird-text.png").await.unwrap();
 
     // sound load
-    let point_sound =
-        macroquad::audio::load_sound_from_bytes(&Asset::get("sounds/point.wav").unwrap().data)
-            .await
-            .unwrap();
-    let smack_sound =
-        macroquad::audio::load_sound_from_bytes(&Asset::get("sounds/smack.wav").unwrap().data)
-            .await
-            .unwrap();
-    let jump_sound =
-        macroquad::audio::load_sound_from_bytes(&Asset::get("sounds/hnh.wav").unwrap().data)
-            .await
-            .unwrap();
-    let death_sound =
-        macroquad::audio::load_sound_from_bytes(&Asset::get("sounds/death.wav").unwrap().data)
-            .await
-            .unwrap();
-    let bg_music =
-        macroquad::audio::load_sound_from_bytes(&Asset::get("sounds/bg-music.wav").unwrap().data)
-            .await
-            .unwrap();
+    let point_sound = load_sound("sounds/point.wav").await.unwrap();
+    let smack_sound = load_sound("sounds/smack.wav").await.unwrap();
+    let jump_sound = load_sound("sounds/hnh.wav").await.unwrap();
+    let death_sound = load_sound("sounds/death.wav").await.unwrap();
+    let bg_music = load_sound("sounds/bg-music.wav").await.unwrap();
 
     // initialization
     let mut game_score = 0;

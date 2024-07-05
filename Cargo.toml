@@ -1,12 +1,11 @@
 [package]
 name = "disco-bird"
-version = "0.1.0"
+version = "1.0.0"
 edition = "2021"
 authors = ["HasChad", "Furriana Pawslot"]
 
 [dependencies]
 macroquad = {version = "0.4.8", features = ["audio"]}
-rust-embed="8.4.0"
 
 [build-dependencies]
 winres = "0.1.12"
